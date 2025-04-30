@@ -1,0 +1,72 @@
+services:
+  facebook_ads:
+    build: ./datasource
+    stdin_open: true
+    tty: true
+    ports:
+      - "9000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - POSTGRES_NAME=facebook_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_HOST=fbdb
+      - POSTGRES_PORT=5432
+    command: sh -c "python manage.py wait_for_db && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - fbdb
+
+  google_ads:
+    build: ./datasource
+    stdin_open: true
+    tty: true
+    ports:
+      - "9001:8000"
+    volumes:
+      - .:/app
+    environment:
+      - POSTGRES_NAME=google_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_HOST=googledb
+      - POSTGRES_PORT=5432
+    command: sh -c "python manage.py wait_for_db && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - googledb
+
+  fbdb:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=facebook_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - facebook_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  googledb:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=google_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+    ports:
+      - "5434:5432"
+    volumes:
+      - google_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  facebook_db_data:
+  google_db_data:
